@@ -238,6 +238,42 @@ static int httpd_findandstore_firstchunk(void){
 	return(0);
 }
 
+// Debug function
+void dbg_show(char *head){
+	/**** dbg tunning begin ****/
+	// Skip repeated debug messages in the middle and only display 2~3 packages in the beginning and in the end
+	static int isSKIP = 0;
+	int scope_limit = 2500; // around 2~3 packets
+	if ( strcmp(head,">>>") == 0 ){
+		if( hs->content_length >= 0 && hs->content_recv >= 0 ){
+			if ( hs->content_recv > scope_limit ) { isSKIP = 1; }
+
+			if ( (hs->content_length - hs->content_recv) < scope_limit ) { isSKIP = 0; }
+		}
+	}
+
+	if( isSKIP ){
+		return;
+	}
+
+	if ( strcmp(head,">>>") == 0 ){ printf("\n"); }
+	/**** dbg tunning end ****/
+
+	printf("%s",head);
+	pkt_dbg();
+	printf(" , ");
+	printf("upload: %9d",hs->upload);
+	printf(" , ");
+	printf("upload_total: %9d",hs->upload_total);
+	printf(" , ");
+	printf("content_length: %9d",hs->content_length);
+	printf(" , ");
+	printf("content_recv: %9d",hs->content_recv);
+	printf(" , ");
+	printf("webfailsafe_post_done: %1d", webfailsafe_post_done);
+	printf("\n");
+}
+
 // Probe the http content length status for deciding whether http request ends or not.
 static void probe_http_content(void){
 	// Probe the "Content-Length" value in the beginning
@@ -378,6 +414,8 @@ void httpd_appcall(void){
 					return;
 
 				} else if(hs->state == STATE_UPLOAD_REQUEST){
+
+					dbg_show(">>>");
 
 					char *start = NULL;
 					char *end = NULL;
@@ -520,6 +558,7 @@ void httpd_appcall(void){
 						data_start_found = 0;
 					}
 
+					dbg_show("<<<");
 					return;
 
 				} /* else if(hs->state == STATE_UPLOAD_REQUEST) */
@@ -580,6 +619,8 @@ void httpd_appcall(void){
 			// if we got new data frome remote host
 			if(uip_newdata()){
 
+				dbg_show(">>>");
+
 				// if we are in STATE_UPLOAD_REQUEST state
 				if(hs->state == STATE_UPLOAD_REQUEST){
 
@@ -620,6 +661,7 @@ void httpd_appcall(void){
 
 						// end of post upload
 						webfailsafe_post_done = 1;
+						dbg_show("***");
 						NetBootFileXferSize = (ulong)hs->upload_total;
 
 						// which website will be returned
@@ -639,6 +681,8 @@ void httpd_appcall(void){
 					}
 
 				}
+
+				dbg_show("<<<");
 
 				return;
 			}
