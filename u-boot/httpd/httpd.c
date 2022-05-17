@@ -90,6 +90,9 @@ static void httpd_state_reset(void){
 	hs->dataptr = 0;
 	hs->upload = 0;
 	hs->upload_total = 0;
+	// for probe_http_content()
+	hs->content_length = -1;
+	hs->content_recv = -1;
 
 	data_start_found = 0;
 	post_packet_counter = 0;
@@ -235,6 +238,46 @@ static int httpd_findandstore_firstchunk(void){
 	return(0);
 }
 
+// Probe the http content length status for deciding whether http request ends or not.
+static void probe_http_content(void){
+	// Probe the "Content-Length" value in the beginning
+	if(hs->content_length < 0){
+		char *p_start = NULL;
+		char *p_end = NULL;
+
+		p_start = (char *)strstr((char*)uip_appdata, "Content-Length:");
+
+		if(p_start){
+			p_start += sizeof("Content-Length:");
+
+			// find end of the line with "Content-Length:"
+			p_end = (char *)strstr(p_start, eol);
+			if(p_end){
+				hs->content_length = atoi(p_start);
+			}
+		}
+	}
+
+	if(hs->content_length < 0){ return; } // Do nothing if we don't know the "Content-Length" yet
+
+	// Probe header's end when the beginning is not found yet.
+	if(hs->content_recv < 0){
+		char *q_pos = NULL;
+		q_pos = (char *)strstr((char*)uip_appdata, "\r\n\r\n");
+
+		// update hs->content_recv and return when found the position
+		if(q_pos){
+			q_pos += sizeof("\r\n\r\n") - 1; // NOTE: sizeof("\r\n\r\n") is 5, not 4.
+			hs->content_recv = (unsigned int)(uip_len - (q_pos - (char *)uip_appdata));
+			return;
+		}
+	}
+
+	if(hs->content_recv < 0){ return; } // Start counting length only when we know where the content begin
+
+	hs->content_recv += (unsigned int)uip_len;
+}
+
 // called for http server app
 void httpd_appcall(void){
 	struct fs_file fsfile;
@@ -341,6 +384,9 @@ void httpd_appcall(void){
 
 					// end bufor data with NULL
 					uip_appdata[uip_len] = '\0';
+
+					// Probe http content in parallel
+					probe_http_content();
 
 					/*
 					 * We got first packet with POST request
@@ -539,6 +585,9 @@ void httpd_appcall(void){
 
 					// end bufor data with NULL
 					uip_appdata[uip_len] = '\0';
+
+					// Probe http content in parallel
+					probe_http_content();
 
 					// do we have to find start of data?
 					if(!data_start_found){

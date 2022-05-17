@@ -62,6 +62,9 @@ struct httpd_state {
 	u8_t *dataptr;
 	unsigned int upload;
 	unsigned int upload_total;
+	// For probe_http_content()
+	int content_length; // Final Content-Length value. "-1": initial value, "0": No content.
+	int content_recv; // The content-length received for now. "-1": initial value, not found the beginning yet. "0": not received content yet.
 };
 
 /* UIP_APPSTATE_SIZE: The size of the application-specific state
