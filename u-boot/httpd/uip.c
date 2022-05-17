@@ -1499,5 +1499,16 @@ htons(unsigned short int val)
 {
   return HTONS(val);
 }*/
+
+void pkt_dbg(void) {
+	printf("uip_flags: %2x", uip_flags);
+	puts(" , ");
+	printf("ackno: %2x_%2x_%2x_%2x", BUF->ackno[0],BUF->ackno[1],BUF->ackno[2],BUF->ackno[3] );
+	puts(" , ");
+	printf("seqno: %2x_%2x_%2x_%2x", BUF->seqno[0],BUF->seqno[1],BUF->seqno[2],BUF->seqno[3] );
+	puts(" , ");
+	printf("len: %4d", uip_len);
+}
+
 /*-----------------------------------------------------------------------------------*/
 /** @} */

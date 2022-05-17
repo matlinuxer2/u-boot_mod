@@ -726,6 +726,8 @@ struct uip_udp_conn *uip_udp_new(u16_t *ripaddr, u16_t rport);
 u16_t htons(u16_t val);
 #endif /* htons */
 
+void pkt_dbg(void);
+
 /** @} */
 
 /**
