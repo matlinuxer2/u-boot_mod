@@ -655,7 +655,8 @@ void httpd_appcall(void){
 					httpd_download_progress();
 
 					// if we have collected all data
-					if(hs->upload >= hs->upload_total){
+					if(hs->upload >= hs->upload_total &&
+							(hs->content_length >=0 && hs->content_recv >= hs->content_length)){
 
 						printf("\n\n");
 
